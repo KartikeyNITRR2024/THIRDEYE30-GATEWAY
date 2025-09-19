@@ -3,6 +3,8 @@ package com.thirdeye3.gateway.filters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thirdeye3.gateway.dtos.Response;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -13,6 +15,9 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class ApiKeyFilter extends AbstractGatewayFilterFactory<ApiKeyFilter.Config> {
+	
+	@Value("${telegrambot.api.key}")
+	private String telegramApiKey;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -23,9 +28,13 @@ public class ApiKeyFilter extends AbstractGatewayFilterFactory<ApiKeyFilter.Conf
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            String apiKey = exchange.getRequest().getHeaders().getFirst("TELEGRAMBOT-API-KEY");
+            exchange.getRequest().getHeaders().forEach((key, values) -> {
+                System.out.println(key + " : " + String.join(",", values));
+            });
 
-            if (apiKey == null || !apiKey.equals(config.getValidApiKey())) {
+            String apiKey = exchange.getRequest().getHeaders().getFirst("telegrambot-api-key");
+
+            if (apiKey == null || !apiKey.equals(telegramApiKey)) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
@@ -41,6 +50,7 @@ public class ApiKeyFilter extends AbstractGatewayFilterFactory<ApiKeyFilter.Conf
                     DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                     return exchange.getResponse().writeWith(Mono.just(buffer));
                 } catch (JsonProcessingException e) {
+                    e.printStackTrace();
                     return exchange.getResponse().setComplete();
                 }
             }

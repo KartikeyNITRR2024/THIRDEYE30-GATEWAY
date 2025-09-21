@@ -14,22 +14,22 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
-public class ApiKeyFilter extends AbstractGatewayFilterFactory<ApiKeyFilter.Config> {
+public class WebscrapperApiKeyFilter extends AbstractGatewayFilterFactory<WebscrapperApiKeyFilter.Config> {
 	
-	@Value("${telegrambot.api.key}")
-	private String telegramApiKey;
+	@Value("${webscrapper.api.key}")
+	private String webscrapperApiKey;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ApiKeyFilter() {
+    public WebscrapperApiKeyFilter() {
         super(Config.class);
     }
 
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            String apiKey = exchange.getRequest().getHeaders().getFirst("telegrambot-api-key");
-            if (apiKey == null || !apiKey.equals(telegramApiKey)) {
+            String apiKey = exchange.getRequest().getHeaders().getFirst("webscrapper-api-key");
+            if (apiKey == null || !apiKey.equals(webscrapperApiKey)) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 

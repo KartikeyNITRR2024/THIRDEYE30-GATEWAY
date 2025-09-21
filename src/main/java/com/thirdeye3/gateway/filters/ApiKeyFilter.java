@@ -28,12 +28,8 @@ public class ApiKeyFilter extends AbstractGatewayFilterFactory<ApiKeyFilter.Conf
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            exchange.getRequest().getHeaders().forEach((key, values) -> {
-                System.out.println(key + " : " + String.join(",", values));
-            });
-
             String apiKey = exchange.getRequest().getHeaders().getFirst("telegrambot-api-key");
-
+            System.out.println(apiKey);
             if (apiKey == null || !apiKey.equals(telegramApiKey)) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);

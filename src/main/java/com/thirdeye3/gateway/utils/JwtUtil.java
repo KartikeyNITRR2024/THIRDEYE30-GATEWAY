@@ -2,25 +2,28 @@ package com.thirdeye3.gateway.utils;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class JwtUtil {
 
-    private final SecretKey key;
-    private final long expiration;
+    @Value("${thirdeye.jwt.secret}")
+    private String secret;
 
-    public JwtUtil(@Value("${thirdeye.jwt.secret}") String secret,
-                   @Value("${thirdeye.jwt.expiration}") long expiration) {
+    @Value("${thirdeye.jwt.expiration}")
+    private long expiration;
+
+    private SecretKey key;
+
+    @PostConstruct
+    public void init() {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expiration = expiration;
     }
 
     public Claims getClaims(String token) {
@@ -55,5 +58,4 @@ public class JwtUtil {
             return false;
         }
     }
-
 }

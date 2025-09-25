@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .pathMatchers("/sm/stocks/webscrapper/**").permitAll()
                         .pathMatchers("/sv/webscrapper/**").permitAll()
                         .pathMatchers("/api/statuschecker/**").permitAll()
+                        .pathMatchers("/api/updateinitiatier").permitAll()
                         .pathMatchers("/pm/**", "/mb/**", "/sm/**", "/sv/**", "/me/**").hasRole("ADMIN")
                         .pathMatchers("/um/admin/**").hasRole("ADMIN")
                         .pathMatchers("/um/**").hasAnyRole("USER", "ADMIN")

@@ -16,9 +16,6 @@ public class JwtUtil {
     @Value("${thirdeye.jwt.secret}")
     private String secret;
 
-    @Value("${thirdeye.jwt.expiration}")
-    private long expiration;
-
     private SecretKey key;
 
     @PostConstruct

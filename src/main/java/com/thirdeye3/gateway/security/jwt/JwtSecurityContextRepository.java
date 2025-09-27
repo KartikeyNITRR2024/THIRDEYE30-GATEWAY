@@ -34,8 +34,8 @@ public class JwtSecurityContextRepository implements ServerSecurityContextReposi
     public Mono<SecurityContext> load(ServerWebExchange exchange) {
         String authHeader = exchange.getRequest().getHeaders().getFirst("token");
         logger.info("TOKEN IS " + authHeader);
-        logger.info("TOKEN LENGTH IS " + authHeader.length());
         if (authHeader != null) {
+            logger.info("TOKEN LENGTH IS " + authHeader.length());
             logger.info("TOKEN STARTER IS " + tokenStarter+"*");
             logger.info("TOKEN STARTER LENGTH IS " + tokenStarter.length());
             String authToken = authHeader.startsWith(tokenStarter) ? authHeader.substring(tokenStarter.length()) : authHeader;

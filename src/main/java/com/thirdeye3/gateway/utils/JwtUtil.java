@@ -54,11 +54,31 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token) {
+        logger.info("🧐Validating token...");
         try {
-            getClaims(token);
+            Jws<Claims> claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
+
+            logger.info("✅ Token is valid. Subject: {}, Expiration: {}",
+                    claims.getBody().getSubject(),
+                    claims.getBody().getExpiration());
+
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
+        } catch (ExpiredJwtException ex) {
+            logger.warn("⚠️ Token has expired at: {}", ex.getClaims().getExpiration());
+        } catch (UnsupportedJwtException ex) {
+            logger.error("❌ Unsupported JWT Token", ex);
+        } catch (MalformedJwtException ex) {
+            logger.error("❌ Invalid JWT structure (Malformed)", ex);
+        } catch (SignatureException ex) {
+            logger.error("❌ Invalid JWT Signature", ex);
+        } catch (IllegalArgumentException ex) {
+            logger.error("❌ Token claims string is empty", ex);
+        } catch (Exception ex) {
+            logger.error("❌ Unexpected error while validating token", ex);
         }
+        return false;
     }
 }

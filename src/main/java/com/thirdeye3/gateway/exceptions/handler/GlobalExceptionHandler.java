@@ -57,6 +57,14 @@ public class GlobalExceptionHandler {
                 new Response<>(false, HttpStatus.UNAUTHORIZED.value(), "Token expired", null),
                 HttpStatus.UNAUTHORIZED);
     }
+    
+    @ExceptionHandler({MalformedJwtException.class, SignatureException.class})
+    public Mono<Void> handleInvalidJwt(ServerWebExchange exchange, RuntimeException ex) {
+    	logger.warn("🚫 Invalid JWT: {}", ex.getMessage());
+        return writeError(exchange,
+                new Response<>(false, HttpStatus.UNAUTHORIZED.value(), "Invalid or malformed token", null),
+                HttpStatus.UNAUTHORIZED);
+    }
 
     @ExceptionHandler(BadCredentialsException.class)
     public Mono<Void> handleBadCredentials(ServerWebExchange exchange, BadCredentialsException ex) {

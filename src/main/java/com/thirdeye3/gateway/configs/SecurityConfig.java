@@ -5,6 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thirdeye3.gateway.dtos.Response;
 import com.thirdeye3.gateway.security.jwt.JwtAuthenticationManager;
 import com.thirdeye3.gateway.security.jwt.JwtSecurityContextRepository;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,15 +58,22 @@ public class SecurityConfig {
                 .authenticationManager(authManager)
                 .securityContextRepository(contextRepository)
                 .exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec
-                        .authenticationEntryPoint((exchange, ex) ->
-                                writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED,
-                                        "Unauthorized or missing/invalid token"))
+                        .authenticationEntryPoint((exchange, ex) -> {
+                            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                            if (cause instanceof MalformedJwtException || cause instanceof SignatureException) {
+                                return writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED, "Invalid or malformed JWT token");
+                            } else if (cause instanceof ExpiredJwtException) {
+                                return writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED, "JWT token expired");
+                            } else {
+                                return writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED, "Unauthorized or missing/invalid token");
+                            }
+                        })
                         .accessDeniedHandler((exchange, ex) ->
-                                writeErrorResponse(exchange, HttpStatus.FORBIDDEN,
-                                        "Access denied"))
+                                writeErrorResponse(exchange, HttpStatus.FORBIDDEN, "Access denied"))
                 )
                 .build();
     }
+
 
     private Mono<Void> writeErrorResponse(ServerWebExchange exchange, HttpStatus status, String message) {
         var response = exchange.getResponse();

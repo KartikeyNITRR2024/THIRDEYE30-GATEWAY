@@ -1,16 +1,21 @@
 package com.thirdeye3.gateway.configs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.thirdeye3.gateway.dtos.Response;
 import com.thirdeye3.gateway.security.jwt.JwtAuthenticationManager;
 import com.thirdeye3.gateway.security.jwt.JwtSecurityContextRepository;
-
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -21,6 +26,8 @@ public class SecurityConfig {
 
     @Autowired
     private JwtSecurityContextRepository contextRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
@@ -46,9 +53,31 @@ public class SecurityConfig {
                 .authenticationManager(authManager)
                 .securityContextRepository(contextRepository)
                 .exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec
-                        .authenticationEntryPoint((exchange, ex) -> Mono.error(ex))
-                        .accessDeniedHandler((exchange, ex) -> Mono.error(ex))
+                        .authenticationEntryPoint((exchange, ex) ->
+                                writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED,
+                                        "Unauthorized or missing/invalid token"))
+                        .accessDeniedHandler((exchange, ex) ->
+                                writeErrorResponse(exchange, HttpStatus.FORBIDDEN,
+                                        "Access denied"))
                 )
                 .build();
+    }
+
+    private Mono<Void> writeErrorResponse(ServerWebExchange exchange, HttpStatus status, String message) {
+        var response = exchange.getResponse();
+        response.setStatusCode(status);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+        Response<Object> body = new Response<>(false, status.value(), message, null);
+
+        byte[] bytes;
+        try {
+            bytes = objectMapper.writeValueAsBytes(body);
+        } catch (JsonProcessingException e) {
+            return Mono.error(e);
+        }
+
+        DataBuffer buffer = response.bufferFactory().wrap(bytes);
+        return response.writeWith(Mono.just(buffer));
     }
 }

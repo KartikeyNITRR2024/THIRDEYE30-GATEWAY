@@ -36,7 +36,7 @@ public class JwtSecurityContextRepository implements ServerSecurityContextReposi
         if (authHeader != null) {
             String authToken = authHeader.startsWith(tokenStarter) ? authHeader.substring(tokenStarter.length()) : authHeader;
             Authentication auth = new UsernamePasswordAuthenticationToken(authToken, authToken);
-            return this.authenticationManager.authenticate(auth).map(SecurityContextImpl::new);
+            return authenticationManager.authenticate(auth).map(SecurityContextImpl::new);
         }
         return Mono.empty();
     }

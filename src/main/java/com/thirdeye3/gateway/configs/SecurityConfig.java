@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thirdeye3.gateway.dtos.Response;
 import com.thirdeye3.gateway.security.jwt.JwtAuthenticationManager;
 import com.thirdeye3.gateway.security.jwt.JwtSecurityContextRepository;
+import com.thirdeye3.gateway.utils.SecurityPaths;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -43,6 +44,9 @@ public class SecurityConfig {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    private SecurityPaths securityPaths;
+
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         logger.info("🔐 Initializing SecurityWebFilterChain...");
@@ -50,27 +54,15 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(
-                                "/um/auth/register",
-                                "/um/auth/login",
-                                "/mb/message/telegrambot/**",
-                                "/pm/properties/telegrambot/**",
-                                "/pm/properties/webscrapper/**",
-                                "/sm/stocks/webscrapper/**",
-                                "/sv/webscrapper/**",
-                                "/api/statuschecker/**",
-                                "/api/updateinitiatier"
-                        ).permitAll()
-                        .pathMatchers("/pm/**", "/mb/**", "/sm/**", "/sv/**", "/me/**").hasRole("ADMIN")
-                        .pathMatchers("/um/admin/**").hasRole("ADMIN")
-                        .pathMatchers("/um/**").hasAnyRole("USER", "ADMIN")
-                        .anyExchange().authenticated()
+                        .pathMatchers(securityPaths.getOpenApiPaths().toArray(new String[0])).permitAll()
+                        .pathMatchers(securityPaths.getUserApiPaths().toArray(new String[0])).hasRole("USER")
+                        .anyExchange().hasRole("ADMIN")
                 )
                 .authenticationManager(authManager)
                 .securityContextRepository(contextRepository)
                 .exceptionHandling(spec -> spec
                         .authenticationEntryPoint((exchange, ex) -> {
-                            logger.error("🚨 Authentication entry point triggered due to: {}",  ex.getMessage());
+                            logger.error("🚨 Authentication entry point triggered due to: {}", ex.getMessage());
                             return writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED, ex.getMessage());
                         })
                         .accessDeniedHandler((exchange, ex) -> {
@@ -86,6 +78,7 @@ public class SecurityConfig {
                     SecurityWebFiltersOrder.AUTHENTICATION)
                 .build();
     }
+
 
 
     private Mono<Void> writeErrorResponse(ServerWebExchange exchange, HttpStatus status, String message) {

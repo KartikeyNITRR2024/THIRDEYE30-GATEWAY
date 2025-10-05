@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -60,22 +61,22 @@ public class JwtUtil {
             return jws.getBody();
         } catch (ExpiredJwtException ex) {
             logger.warn("⚠️ Token has expired at: {}", ex.getClaims().getExpiration());
-            throw ex;
+            throw new BadCredentialsException("Session out. Please login again.");
         } catch (UnsupportedJwtException ex) {
-            logger.error("❌ Unsupported JWT Token", ex);
-            throw ex;
+            logger.error("❌ Unsupported JWT Token");
+            throw new BadCredentialsException("Invalid token");
         } catch (MalformedJwtException ex) {
-            logger.error("❌ Invalid JWT structure (Malformed)", ex);
-            throw ex;
+            logger.error("❌ Invalid JWT structure (Malformed)");
+            throw new BadCredentialsException("Invalid token");
         } catch (SignatureException ex) {
-            logger.error("❌ Invalid JWT Signature", ex);
-            throw ex;
+            logger.error("❌ Invalid JWT Signature");
+            throw new BadCredentialsException("Invalid token");
         } catch (IllegalArgumentException ex) {
-            logger.error("❌ Token claims string is empty", ex);
-            throw ex;
+            logger.error("❌ Token claims string is empty");
+            throw new BadCredentialsException("Invalid token");
         } catch (Exception ex) {
-            logger.error("❌ Unexpected error while validating token", ex);
-            throw ex;
+            logger.error("❌ Unexpected error while validating token");
+            throw new BadCredentialsException("Invalid token");
         }
     }
 

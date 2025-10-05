@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -19,10 +20,10 @@ public class JwtSecurityContextRepository implements ServerSecurityContextReposi
 
     @Value("${thirdeye.jwt.token.starter}")
     private String tokenStarter;
-    
+
     @Autowired
     private JwtAuthenticationManager authenticationManager;
-    
+
     private static final Logger logger = LoggerFactory.getLogger(JwtSecurityContextRepository.class);
 
     @Override
@@ -33,13 +34,28 @@ public class JwtSecurityContextRepository implements ServerSecurityContextReposi
     @Override
     public Mono<SecurityContext> load(ServerWebExchange exchange) {
         String authHeader = exchange.getRequest().getHeaders().getFirst("token");
-        if (authHeader != null) {
-            String authToken = authHeader.startsWith(tokenStarter) ? authHeader.substring(tokenStarter.length()) : authHeader;
-            Authentication auth = new UsernamePasswordAuthenticationToken(authToken, authToken);
-            return authenticationManager.authenticate(auth).map(SecurityContextImpl::new);
+
+        if (authHeader == null) {
+            logger.debug("No 'token' header found in the request. Skipping authentication.");
+            return Mono.error(new BadCredentialsException("Invalid token"));
         }
-        return Mono.empty();
+
+        String authToken = authHeader.startsWith(tokenStarter)
+                ? authHeader.substring(tokenStarter.length())
+                : authHeader;
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(authToken, authToken);
+
+        return authenticationManager.authenticate(auth)
+                .doOnSubscribe(sub -> {})
+                .doOnNext(a -> {})
+                .map(authObj -> {
+                    return (SecurityContext) new SecurityContextImpl(authObj);
+                })
+                .doOnSuccess(context -> {})
+                .doOnError(ex -> {})
+                .onErrorResume(ex -> {
+                    return Mono.error(new BadCredentialsException(ex.getMessage()));
+                });
     }
-
 }
-

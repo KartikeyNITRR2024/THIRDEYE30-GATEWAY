@@ -37,6 +37,10 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
         try {
             Claims claims = jwtUtil.validateToken(authToken);
             String username = claims.getSubject();
+            Long userId = claims.get("userId", Long.class);
+            
+            logger.info("USER DETAILS" + userId);
+            
             List<String> roles = Optional.ofNullable(claims.get("roles"))
                                          .filter(List.class::isInstance)
                                          .map(r -> ((List<?>) r).stream().map(Object::toString).toList())
@@ -44,7 +48,8 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
             var authorities = roles.stream()
                                    .map(SimpleGrantedAuthority::new)
                                    .collect(Collectors.toList());
-            Authentication auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
+            auth.setDetails(userId);
             return Mono.just(auth);
 
         } catch (BadCredentialsException ex) {

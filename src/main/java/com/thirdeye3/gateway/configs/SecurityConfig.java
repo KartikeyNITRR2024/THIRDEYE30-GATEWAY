@@ -80,7 +80,7 @@ public class SecurityConfig {
                 )
                 .addFilterAt((exchange, chain) -> chain.filter(exchange)
                         .onErrorResume(ex -> {
-                            logger.error("🔥 Caught unhandled Mono.error in security filter chain: {}", ex.toString());
+                            logger.error("🔥 Caught unhandled Mono.error in security filter chain: {}", ex.getMessage());
                             return writeErrorResponse(exchange, HttpStatus.UNAUTHORIZED, ex.getMessage());
                         }),
                     SecurityWebFiltersOrder.AUTHENTICATION)

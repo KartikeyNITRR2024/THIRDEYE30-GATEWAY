@@ -39,7 +39,7 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
             String username = claims.getSubject();
             Long userId = claims.get("userId", Long.class);
             
-            logger.info("USER DETAILS" + userId);
+            logger.info("USER DETAILS " + userId);
             
             List<String> roles = Optional.ofNullable(claims.get("roles"))
                                          .filter(List.class::isInstance)

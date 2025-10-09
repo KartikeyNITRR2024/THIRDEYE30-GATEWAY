@@ -24,7 +24,6 @@ public class GatewayFilterConfig implements GlobalFilter, Ordered {
         return ReactiveSecurityContextHolder.getContext()
                 .flatMap(ctx -> safeProcess(exchange, chain, ctx))
                 .onErrorResume(ex -> {
-                    logger.error("Reactive error in CombinedHeaderFilter: {}", ex.getMessage());
                     return chain.filter(exchange);
                 })
                 .switchIfEmpty(addApiKeyHeader(exchange, chain));

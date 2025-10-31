@@ -14,6 +14,9 @@ public class Scheduler {
 	
     @Autowired
     SelfClient selfClient;
+    
+    @Autowired
+    ServiceCaller serviceCaller;
 	
 	private static final Logger logger = LoggerFactory.getLogger(Scheduler.class);
     
@@ -26,6 +29,7 @@ public class Scheduler {
 	@Scheduled(fixedRate = 30000)
     public void checkStatusTask() {
         Response<String> response = selfClient.statusChecker(uniqueId, uniqueCode);
+        serviceCaller.callAllServices();
         logger.info("Status check response is {}", response.getResponse());
     }
 

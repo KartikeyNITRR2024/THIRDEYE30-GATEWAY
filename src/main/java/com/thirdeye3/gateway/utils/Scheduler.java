@@ -29,7 +29,6 @@ public class Scheduler {
 	@Scheduled(fixedRate = 30000)
     public void checkStatusTask() {
         Response<String> response = selfClient.statusChecker(uniqueId, uniqueCode);
-        serviceCaller.callAllServices();
         logger.info("Status check response is {}", response.getResponse());
     }
 	

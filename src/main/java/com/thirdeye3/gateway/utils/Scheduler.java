@@ -32,6 +32,11 @@ public class Scheduler {
         serviceCaller.callAllServices();
         logger.info("Status check response is {}", response.getResponse());
     }
+	
+	@Scheduled(fixedRate = 120000)
+    public void checkOtherStatusTask() {
+        serviceCaller.callAllServices();
+    }
 
 }
 

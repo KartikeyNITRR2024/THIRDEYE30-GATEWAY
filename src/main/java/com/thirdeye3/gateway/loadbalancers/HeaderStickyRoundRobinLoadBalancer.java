@@ -1,4 +1,7 @@
 package com.thirdeye3.gateway.loadbalancers;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.loadbalancer.DefaultResponse;
@@ -10,11 +13,15 @@ import org.springframework.cloud.loadbalancer.core.ReactorServiceInstanceLoadBal
 import org.springframework.cloud.loadbalancer.core.ServiceInstanceListSupplier;
 import reactor.core.publisher.Mono;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class HeaderStickyRoundRobinLoadBalancer implements ReactorServiceInstanceLoadBalancer {
 
+    private static final Logger log = LoggerFactory.getLogger(HeaderStickyRoundRobinLoadBalancer.class);
+    
     private final String serviceId;
     private final ObjectProvider<ServiceInstanceListSupplier> serviceInstanceListSupplierProvider;
     private final AtomicInteger position = new AtomicInteger(0);
@@ -32,8 +39,13 @@ public class HeaderStickyRoundRobinLoadBalancer implements ReactorServiceInstanc
 
     private Response<ServiceInstance> processInstanceResponse(List<ServiceInstance> instances, Request request) {
         if (instances.isEmpty()) {
+            log.warn("No instances available for service: {}", serviceId);
             return new org.springframework.cloud.client.loadbalancer.EmptyResponse();
         }
+
+        List<ServiceInstance> sortedInstances = instances.stream()
+                .sorted(Comparator.comparing(ServiceInstance::getInstanceId))
+                .collect(Collectors.toList());
 
         String headerValue = null;
         if (request.getContext() instanceof RequestDataContext context) {
@@ -41,11 +53,21 @@ public class HeaderStickyRoundRobinLoadBalancer implements ReactorServiceInstanc
         }
 
         if (headerValue != null && !headerValue.isBlank()) {
-            int index = Math.abs(headerValue.hashCode()) % instances.size();
-            return new DefaultResponse(instances.get(index));
+            int index = Math.abs(headerValue.hashCode()) % sortedInstances.size();
+            ServiceInstance chosen = sortedInstances.get(index);
+            
+            log.info("STICKY ROUTE: [webscrapper-unique-id: {}] -> Instance: {} (Port: {}) [Total Instances: {}]", 
+                     headerValue, chosen.getInstanceId(), chosen.getPort(), sortedInstances.size());
+            
+            return new DefaultResponse(chosen);
         }
         
         int pos = Math.abs(this.position.incrementAndGet());
-        return new DefaultResponse(instances.get(pos % instances.size()));
+        ServiceInstance chosen = sortedInstances.get(pos % sortedInstances.size());
+        
+        log.info("ROUND-ROBIN ROUTE: No header -> Instance: {} (Port: {})", 
+                 chosen.getInstanceId(), chosen.getPort());
+                 
+        return new DefaultResponse(chosen);
     }
 }

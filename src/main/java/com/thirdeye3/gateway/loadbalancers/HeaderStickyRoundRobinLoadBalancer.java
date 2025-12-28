@@ -56,7 +56,7 @@ public class HeaderStickyRoundRobinLoadBalancer implements ReactorServiceInstanc
             int index = Math.abs(headerValue.hashCode()) % sortedInstances.size();
             ServiceInstance chosen = sortedInstances.get(index);
             
-            log.info("STICKY ROUTE: [webscrapper-unique-id: {}] -> Instance: {} (Port: {}) [Total Instances: {}]", 
+            log.debug("STICKY ROUTE: [webscrapper-unique-id: {}] -> Instance: {} (Port: {}) [Total Instances: {}]", 
                      headerValue, chosen.getInstanceId(), chosen.getPort(), sortedInstances.size());
             
             return new DefaultResponse(chosen);
@@ -65,7 +65,7 @@ public class HeaderStickyRoundRobinLoadBalancer implements ReactorServiceInstanc
         int pos = Math.abs(this.position.incrementAndGet());
         ServiceInstance chosen = sortedInstances.get(pos % sortedInstances.size());
         
-        log.info("ROUND-ROBIN ROUTE: No header -> Instance: {} (Port: {})", 
+        log.debug("ROUND-ROBIN ROUTE: No header -> Instance: {} (Port: {})", 
                  chosen.getInstanceId(), chosen.getPort());
                  
         return new DefaultResponse(chosen);
